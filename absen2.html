@@ -41,8 +41,6 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       margin-bottom: 25px;
     }
-
-    /* LAYOUT BERSAMPINGAN (GRID SIDE-BY-SIDE) */
     .scan-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -54,7 +52,6 @@
         grid-template-columns: 1fr;
       }
     }
-
     .form-group {
       margin-bottom: 15px;
     }
@@ -90,8 +87,6 @@
     .btn-submit:hover {
       background-color: #218838;
     }
-
-    /* CAMERA BOX STYLING */
     #reader {
       width: 100%;
       border-radius: 8px;
@@ -125,7 +120,6 @@
       margin-top: 5px;
       text-align: right;
     }
-
     .table-header {
       display: flex;
       justify-content: space-between;
@@ -185,7 +179,6 @@
     }
     .bg-hadir { background-color: #28a745; }
     .bg-pulang { background-color: #17a2b8; }
-    
     .btn-action {
       border: none;
       padding: 6px 10px;
@@ -195,7 +188,6 @@
     }
     .btn-hapus { background-color: #dc3545; color: white; }
     .btn-hapus:hover { background-color: #c82333; }
-
     #statusSync, #scanNotif {
       text-align: center;
       padding: 10px;
@@ -208,7 +200,6 @@
     .sync-loading { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
     .sync-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     .sync-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-    
     .notif-datang { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     .notif-pulang { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
     .notif-gagal { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
@@ -225,7 +216,7 @@
 
   <div class="card">
     <div class="scan-grid">
-      <!-- KOTAK KIRI: INPUT MANUAL / SCANNER HARDWARE USB -->
+      <!-- INPUT MANUAL / SCANNER HARDWARE USB -->
       <div>
         <form id="absensiForm">
           <div class="form-group">
@@ -236,7 +227,7 @@
         </form>
       </div>
 
-      <!-- KOTAK KANAN: KAMERA SCANNER (DENGAN OPSI PILIH KAMERA) -->
+      <!-- CAMERA SCANNER -->
       <div>
         <label>📷 Scanner Kamera:</label>
         <div class="cam-controls">
@@ -278,10 +269,10 @@
 </div>
 
 <script>
-  // PASTE URL DEPLOYMENT GOOGLE APPS SCRIPT ANDA DI BAWAH INI (JIKA ADA)
+  // PASTE URL DEPLOYMENT GOOGLE APPS SCRIPT DI BAWAH INI
   const URL_SPREADSHEET = "https://script.google.com/macros/s/AKfycbz0zUz_GKSQGWcf0jrWFj9vKHl7DzzqyjrLU5UPChi2KZiBDmzKGxk2iqfA_xudqBw/exec";
 
-  // DAFTAR MASTER DATA SISWA & KELAS TERTANAM (NIS sebagai KEY)
+  // DAFTAR MASTER DATA SISWA LOKAL (FALLBACK)
   let masterSiswa = {
     "1001": { nama: "ABDUL AZZIS", kelas: "XII-1" },
     "1002": { nama: "AHMAD HAIKAL AMIRUDDIN", kelas: "XII-1" },
@@ -315,10 +306,9 @@
   document.addEventListener('DOMContentLoaded', () => {
     loadData();
     fetchMasterSiswa();
-    loadCameraDevices(); // Muat daftar kamera & inisialisasi
+    loadCameraDevices();
   });
 
-  // FUNGSI UNTUK MENDETEKSI & MENAMPILKAN DAFTAR KAMERA
   function loadCameraDevices() {
     Html5Qrcode.getCameras().then(devices => {
       cameraSelect.innerHTML = '';
@@ -330,7 +320,6 @@
           cameraSelect.appendChild(option);
         });
 
-        // Pilih kamera belakang secara default jika tersedia
         const backCam = devices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('belakang'));
         currentDeviceId = backCam ? backCam.id : devices[0].id;
         cameraSelect.value = currentDeviceId;
@@ -342,12 +331,10 @@
       }
     }).catch(err => {
       console.error("Gagal mendapatkan daftar kamera:", err);
-      // Fallback jika enumerasi gagal, langsung jalankan environment
       initAutoCamera({ facingMode: "environment" });
     });
   }
 
-  // FUNGSI INISIALISASI KAMERA
   function initAutoCamera(cameraConfig) {
     if (!html5QrCode) {
       html5QrCode = new Html5Qrcode("reader");
@@ -374,7 +361,6 @@
     });
   }
 
-  // FUNGSI MENGGANTI KAMERA DARI DROPDOWN / TOMBOL
   function switchCamera() {
     const selectedId = cameraSelect.value;
     if (!selectedId) return;
@@ -403,7 +389,7 @@
   }
 
   function onScanFailure(error) {
-    // Abaikan error pembacaan frame per sekon
+    // Abaikan error pembacaan frame
   }
 
   function getTanggalSekarang() {
@@ -468,10 +454,19 @@
     setTimeout(() => { scanNotif.style.display = "none"; }, 4000);
   }
 
+  // FUNGSI PROSES ABSENSI (TERMASUK VALIDASI MASTER DATA & BATAS WAKTU)
   function prosesAbsensiSiswa(nis) {
     if (!nis) return;
 
-    const siswa = masterSiswa[nis] || { nama: "Siswa Unregistered (" + nis + ")", kelas: "-" };
+    // 1. CEK KEBERADAAN SISWA DI MASTER DATA
+    const siswa = masterSiswa[nis];
+    
+    if (!siswa) {
+      showScanNotif(`❌ GAGAL: NIS (${nis}) tidak terdaftar dalam sistem!`, "notif-gagal");
+      return; // Hentikan proses jika siswa tidak terdaftar
+    }
+
+    // 2. PROSES ABSENSI JIKA SISWA TERDAFTAR
     let listAbsensi = JSON.parse(localStorage.getItem('listAbsensiSiswa')) || [];
     const tglHariIni = getTanggalSekarang();
     const jamSekarang = getJamSekarang();
