@@ -269,24 +269,31 @@
   // FUNGSI OTOMATIS SINKRONISASI KE GOOGLE SPREADSHEET
   function autoSyncSpreadsheet(actionType, dataPayload) {
     showStatus("🔄 Mengirim & menyinkronkan data ke Spreadsheet...", "sync-loading");
+function autoSyncSpreadsheet(actionType, dataPayload) {
+  showStatus("🔄 Mengirim & menyinkronkan data ke Spreadsheet...", "sync-loading");
+  
+  // Gunakan URLSearchParams agar payload dibaca sebagai form data standar
+  const payload = new URLSearchParams();
+  payload.append("action", actionType);
+  payload.append("data", JSON.stringify(dataPayload));
 
-    fetch(URL_SPREADSHEET, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: actionType,
-        data: dataPayload
-      })
-    })
-    .then(() => {
-      showStatus("✅ Data berhasil tersinkronisasi ke Spreadsheet!", "sync-success");
-    })
-    .catch(err => {
-      console.error("Gagal auto-sync:", err);
-      showStatus("⚠️ Gagal menyinkronkan data ke Spreadsheet.", "sync-error");
-    });
-  }
+  fetch(URL_SPREADSHEET, {
+    method: "POST",
+    mode: "no-cors",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: payload
+  })
+  .then(() => {
+    showStatus("✅ Data berhasil tersinkronisasi ke Spreadsheet!", "sync-success");
+  })
+  .catch(err => {
+    console.error("Gagal auto-sync:", err);
+    showStatus("⚠️ Gagal menyinkronkan data ke Spreadsheet.", "sync-error");
+  });
+}
+
 
   function showStatus(message, className) {
     statusSync.style.display = "block";
