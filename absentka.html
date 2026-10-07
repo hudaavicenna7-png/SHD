@@ -1678,6 +1678,63 @@ let DB = {
 };
 
 let attendanceState = {};
+/* =========================================================
+   SESSION PERSISTENCE
+========================================================= */
+
+const SESSION_KEY = "absensi_bimbingan_session";
+
+function saveSession(){
+    localStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({
+            token: sessionToken,
+            user: currentUser
+        })
+    );
+}
+
+function getSavedSession(){
+
+    try{
+
+        const saved =
+            localStorage.getItem(SESSION_KEY);
+
+        if(!saved) return null;
+
+        const data =
+            JSON.parse(saved);
+
+        if(!data.token || !data.user)
+            return null;
+
+        return data;
+
+    }catch(error){
+
+        console.error(
+            "Session rusak:",
+            error
+        );
+
+        localStorage.removeItem(
+            SESSION_KEY
+        );
+
+        return null;
+    }
+}
+
+function clearSession(){
+
+    sessionToken = "";
+    currentUser = null;
+
+    localStorage.removeItem(
+        SESSION_KEY
+    );
+}
 
 
 /* =========================================================
@@ -1810,7 +1867,10 @@ async function login(){
         sessionToken = result.token;
         currentUser = result.user;
 
+        saveSession();
+
         await bootstrap();
+
 
         $("loginPage").classList.add("hidden");
         $("app").classList.remove("hidden");
@@ -3870,22 +3930,31 @@ async function logout(){
     try{
 
         if(sessionToken){
-
             await api("logout");
-
         }
 
-    }catch(e){}
+    }catch(e){
 
-    currentUser=null;
-    sessionToken="";
+        console.error(
+            "Logout server gagal:",
+            e
+        );
 
-    $("app").classList.add("hidden");
-    $("loginPage").classList.remove("hidden");
+    }finally{
 
-    $("loginUsername").value="";
-    $("loginPassword").value="";
+        clearSession();
+
+        $("app")
+            .classList.add("hidden");
+
+        $("loginPage")
+            .classList.remove("hidden");
+
+        $("loginUsername").value="";
+        $("loginPassword").value="";
+    }
 }
+
 
 
 function showWelcomeModal(){
@@ -3902,6 +3971,74 @@ function showWelcomeModal(){
 function closeWelcomeModal(){
     const modal = $("welcomeModal");
     if(modal) modal.classList.remove("show");
+}
+/* =========================================================
+   RESTORE SESSION SETELAH REFRESH
+========================================================= */
+
+async function restoreSession(){
+
+    const saved =
+        getSavedSession();
+
+    if(!saved){
+        return false;
+    }
+
+    try{
+
+        showStatus("Memulihkan sesi...");
+
+        sessionToken =
+            saved.token;
+
+        currentUser =
+            saved.user;
+
+        /*
+         * Bootstrap sekaligus menjadi
+         * pemeriksaan apakah token masih valid.
+         */
+        await bootstrap();
+
+        $("loginPage")
+            .classList.add("hidden");
+
+        $("app")
+            .classList.remove("hidden");
+
+        $("userName").innerText =
+            currentUser.nama ||
+            currentUser.username;
+
+        $("userRole").innerText =
+            currentUser.role === "ADMIN"
+                ? "Administrator"
+                : "Guru Pembimbing";
+
+        configureRole();
+
+        showPage("dashboard");
+
+        return true;
+
+    }catch(error){
+
+        console.error(
+            "Session tidak valid:",
+            error
+        );
+
+        clearSession();
+
+        $("app")
+            .classList.add("hidden");
+
+        $("loginPage")
+            .classList.remove("hidden");
+
+        return false;
+    }
 }
 
 /* =========================================================
