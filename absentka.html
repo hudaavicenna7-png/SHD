@@ -4047,7 +4047,7 @@ async function restoreSession(){
 
 document.addEventListener(
     "DOMContentLoaded",
-    ()=>{
+    async ()=>{
 
         $("attendanceDate").value =
             today();
@@ -4063,6 +4063,11 @@ document.addEventListener(
                         login();
                 }
             );
+
+        /*
+         * Coba pulihkan login sebelumnya.
+         */
+        await restoreSession();
 
     }
 );
