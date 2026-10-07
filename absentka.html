@@ -288,6 +288,38 @@ label{
     border-color:#dc2626;
 }
 
+.account-pill{
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    border-radius:12px;
+    padding:7px 11px;
+}
+
+.welcome-modal{
+    position:fixed;
+    inset:0;
+    background:rgba(15,23,42,.65);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:300;
+    padding:20px;
+}
+.welcome-modal.show{display:flex}
+.welcome-box{
+    width:min(480px,100%);
+    background:white;
+    border-radius:24px;
+    padding:30px;
+    text-align:center;
+    box-shadow:0 30px 90px rgba(0,0,0,.35);
+}
+.welcome-icon{
+    width:76px;height:76px;border-radius:22px;margin:auto;
+    display:flex;align-items:center;justify-content:center;
+    background:#dbeafe;color:#2563eb;font-size:32px;
+}
+
 .hidden{
     display:none!important;
 }
@@ -394,20 +426,16 @@ label{
 
 
 <!-- WELCOME POPUP -->
-<div id="welcomeModal" class="modal">
-  <div class="modal-box p-6 text-center">
-    <div class="w-16 h-16 mx-auto rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-2xl">
-      <i class="fa-solid fa-hand"></i>
+<div id="welcomeModal" class="welcome-modal">
+    <div class="welcome-box">
+        <div class="welcome-icon"><i class="fa-solid fa-hand-wave"></i></div>
+        <div class="text-xs uppercase tracking-wider text-blue-600 font-bold mt-5">Selamat Datang</div>
+        <h2 id="welcomeName" class="text-2xl font-bold mt-2">-</h2>
+        <p id="welcomeRole" class="text-slate-500 mt-2">-</p>
+        <button class="btn btn-primary mt-6" onclick="closeWelcome()">
+            <i class="fa-solid fa-arrow-right"></i> Masuk ke Dashboard
+        </button>
     </div>
-    <h2 class="text-2xl font-bold mt-4">Selamat Datang</h2>
-    <p class="text-slate-500 mt-2">
-      Selamat datang, <b id="welcomeName">-</b>.
-    </p>
-    <p class="text-sm text-slate-500 mt-1" id="welcomeRole">-</p>
-    <button class="btn btn-primary mt-5" onclick="closeWelcomeModal()">
-      <i class="fa-solid fa-arrow-right"></i> Mulai
-    </button>
-  </div>
 </div>
 
 <!-- APP -->
@@ -452,6 +480,16 @@ label{
             <button onclick="showPage('recap')" id="menu-recap">
                 <i class="fa-solid fa-chart-pie"></i>
                 Rekap Absensi
+            </button>
+
+            <button onclick="showPage('teacher-attendance')" id="menu-teacher-attendance">
+                <i class="fa-solid fa-chalkboard-user"></i>
+                Kehadiran Guru
+            </button>
+
+            <button onclick="showPage('teacher-recap')" id="menu-teacher-recap">
+                <i class="fa-solid fa-chart-column"></i>
+                Rekap Kehadiran Guru
             </button>
 
             <div id="adminMenus">
@@ -532,16 +570,9 @@ label{
 
             <div class="flex items-center gap-3">
 
-                <div class="text-right hidden sm:block">
-                    <div id="userName"
-                         class="font-semibold text-sm">
-                        -
-                    </div>
-
-                    <div id="userRole"
-                         class="text-xs text-slate-500">
-                        -
-                    </div>
+                <div class="account-pill text-right">
+                    <div id="userName" class="font-semibold text-sm">-</div>
+                    <div id="userRole" class="text-xs text-slate-500">-</div>
                 </div>
 
                 <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center">
@@ -809,6 +840,173 @@ label{
 
                 </div>
 
+            </section>
+
+
+            <!-- TEACHER ATTENDANCE -->
+            <section id="page-teacher-attendance" class="hidden">
+
+                <div class="mb-5">
+                    <h2 class="text-2xl font-bold">Kehadiran Guru Bimbingan</h2>
+                    <p class="text-slate-500">Catat kehadiran guru pada sesi bimbingan sesuai penugasan.</p>
+                </div>
+
+                <div class="card p-5 mb-5">
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <input type="hidden" id="teacherAttendanceEditId" value="">
+                        <div>
+                            <label>Tanggal</label>
+                            <input type="date" id="teacherAttendanceDate" class="input">
+                        </div>
+                        <div id="teacherAttendanceTeacherWrap">
+                            <label>Guru</label>
+                            <select id="teacherAttendanceTeacher" class="input" onchange="populateTeacherAttendanceAssignments()"></select>
+                        </div>
+                        <div>
+                            <label>Mapel</label>
+                            <select id="teacherAttendanceSubject" class="input" onchange="populateTeacherAttendanceClasses()"></select>
+                        </div>
+                        <div>
+                            <label>Kelas</label>
+                            <select id="teacherAttendanceClass" class="input"></select>
+                        </div>
+                        <div>
+                            <label>Status Kehadiran</label>
+                            <select id="teacherAttendanceStatus" class="input">
+                                <option value="HADIR">HADIR</option>
+                                <option value="IZIN">IZIN</option>
+                                <option value="SAKIT">SAKIT</option>
+                                <option value="ALPA">ALPA</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Catatan</label>
+                            <input id="teacherAttendanceNote" class="input" placeholder="Catatan (opsional)">
+                        </div>
+                    </div>
+
+                    <div class="mt-5 flex flex-wrap gap-2">
+                        <button class="btn btn-primary" onclick="saveTeacherAttendance()">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            Simpan Kehadiran Guru
+                        </button>
+                        <button class="btn btn-secondary" onclick="prepareTeacherAttendance()">
+                            <i class="fa-solid fa-rotate"></i>
+                            Reset
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
+                            <i class="fa-solid fa-circle-info"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold">Catatan</div>
+                            <div class="text-sm text-slate-500">
+                                Guru hanya dapat mencatat kehadirannya sendiri. Administrator dapat memilih guru.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- TEACHER RECAP -->
+            <section id="page-teacher-recap" class="hidden">
+
+                <div class="flex flex-wrap justify-between gap-3 mb-5">
+                    <div>
+                        <h2 class="text-2xl font-bold">Rekap Kehadiran Guru</h2>
+                        <p class="text-slate-500">Rekap kehadiran guru selama bimbingan berdasarkan periode dan penugasan.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn btn-success" onclick="exportTeacherRecapExcel()">
+                            <i class="fa-solid fa-file-excel"></i>
+                            Excel
+                        </button>
+                        <button class="btn btn-secondary" onclick="window.print()">
+                            <i class="fa-solid fa-print"></i>
+                            Cetak
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card p-5 mb-5">
+                    <div class="grid md:grid-cols-5 gap-4">
+                        <div>
+                            <label>Mulai</label>
+                            <input type="date" id="teacherRecapStart" class="input">
+                        </div>
+                        <div>
+                            <label>Sampai</label>
+                            <input type="date" id="teacherRecapEnd" class="input">
+                        </div>
+                        <div>
+                            <label>Guru</label>
+                            <select id="teacherRecapTeacher" class="input"></select>
+                        </div>
+                        <div>
+                            <label>Mapel</label>
+                            <select id="teacherRecapSubject" class="input"></select>
+                        </div>
+                        <div>
+                            <label>Kelas</label>
+                            <select id="teacherRecapClass" class="input"></select>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary mt-4" onclick="loadTeacherRecap()">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        Tampilkan Rekap
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-5">
+                    <div class="card p-5"><div class="text-sm text-slate-500">Hadir</div><div id="teacherRecapHadir" class="text-3xl font-bold text-green-600">0</div></div>
+                    <div class="card p-5"><div class="text-sm text-slate-500">Izin</div><div id="teacherRecapIzin" class="text-3xl font-bold text-orange-600">0</div></div>
+                    <div class="card p-5"><div class="text-sm text-slate-500">Sakit</div><div id="teacherRecapSakit" class="text-3xl font-bold text-blue-600">0</div></div>
+                    <div class="card p-5"><div class="text-sm text-slate-500">Alpa</div><div id="teacherRecapAlpa" class="text-3xl font-bold text-red-600">0</div></div>
+                    <div class="card p-5"><div class="text-sm text-slate-500">Kehadiran</div><div id="teacherRecapPercent" class="text-3xl font-bold text-violet-600">0%</div></div>
+                </div>
+
+                <div class="card">
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Guru</th>
+                                <th>NIP/NUPTK</th>
+                                <th>Hadir</th>
+                                <th>Izin</th>
+                                <th>Sakit</th>
+                                <th>Alpa</th>
+                                <th>Total</th>
+                                <th>% Kehadiran</th>
+                            </tr>
+                            </thead>
+                            <tbody id="teacherRecapTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card mt-5">
+                    <div class="p-5 border-b">
+                        <h3 class="font-bold">Detail Kehadiran Guru</h3>
+                        <p class="text-xs text-slate-500">Administrator dapat mengedit atau menghapus catatan kehadiran.</p>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>No</th><th>Tanggal</th><th>Guru</th><th>Mapel</th><th>Kelas</th><th>Status</th><th>Catatan</th><th id="teacherRecapActionHead">Aksi</th>
+                            </tr>
+                            </thead>
+                            <tbody id="teacherRecapDetailTable"></tbody>
+                        </table>
+                    </div>
+                </div>
             </section>
 
 
@@ -1674,67 +1872,11 @@ let DB = {
     classes:[],
     assignments:[],
     attendance:[],
+    teacherAttendance:[],
     settings:{}
 };
 
 let attendanceState = {};
-/* =========================================================
-   SESSION PERSISTENCE
-========================================================= */
-
-const SESSION_KEY = "absensi_bimbingan_session";
-
-function saveSession(){
-    localStorage.setItem(
-        SESSION_KEY,
-        JSON.stringify({
-            token: sessionToken,
-            user: currentUser
-        })
-    );
-}
-
-function getSavedSession(){
-
-    try{
-
-        const saved =
-            localStorage.getItem(SESSION_KEY);
-
-        if(!saved) return null;
-
-        const data =
-            JSON.parse(saved);
-
-        if(!data.token || !data.user)
-            return null;
-
-        return data;
-
-    }catch(error){
-
-        console.error(
-            "Session rusak:",
-            error
-        );
-
-        localStorage.removeItem(
-            SESSION_KEY
-        );
-
-        return null;
-    }
-}
-
-function clearSession(){
-
-    sessionToken = "";
-    currentUser = null;
-
-    localStorage.removeItem(
-        SESSION_KEY
-    );
-}
 
 
 /* =========================================================
@@ -1867,10 +2009,7 @@ async function login(){
         sessionToken = result.token;
         currentUser = result.user;
 
-        saveSession();
-
         await bootstrap();
-
 
         $("loginPage").classList.add("hidden");
         $("app").classList.remove("hidden");
@@ -1883,11 +2022,10 @@ async function login(){
                 ? "Administrator"
                 : "Guru Pembimbing";
 
-        showWelcomeModal();
-
         configureRole();
 
         showPage("dashboard");
+        showWelcome();
 
     }catch(error){
 
@@ -1923,6 +2061,9 @@ async function bootstrap(){
 
     DB.attendance =
         result.attendance || [];
+
+    DB.teacherAttendance =
+        result.teacherAttendance || [];
 
     DB.settings =
         result.settings || {};
@@ -1961,6 +2102,10 @@ const pageNames = {
     dashboard:"Dashboard",
 
     attendance:"Absensi Siswa",
+
+    "teacher-attendance":"Kehadiran Guru Bimbingan",
+
+    "teacher-recap":"Rekap Kehadiran Guru",
 
     recap:"Rekap Absensi",
 
@@ -2014,6 +2159,12 @@ function showPage(page){
 
     if(page==="attendance")
         prepareAttendance();
+
+    if(page==="teacher-attendance")
+        prepareTeacherAttendance();
+
+    if(page==="teacher-recap")
+        prepareTeacherRecap();
 
     if(page==="recap")
         prepareRecap();
@@ -3548,6 +3699,300 @@ async function saveAttendance(){
 
 
 /* =========================================================
+   KEHADIRAN GURU BIMBINGAN
+========================================================= */
+
+function getActiveTeachers(){
+    return DB.users.filter(u =>
+        String(u.role || '').toUpperCase() === 'GURU' &&
+        String(u.status || 'AKTIF').toUpperCase() === 'AKTIF'
+    );
+}
+
+function getTeacherAssignments(guruId){
+    return DB.assignments.filter(a =>
+        String(a.status || 'AKTIF').toUpperCase() === 'AKTIF' &&
+        String(a.guruId) === String(guruId)
+    );
+}
+
+function showWelcome(){
+    $("welcomeName").innerText = currentUser.nama || currentUser.username || "Pengguna";
+    $("welcomeRole").innerText = currentUser.role === "ADMIN" ? "Administrator — akses penuh sistem" : "Guru Pembimbing";
+    $("welcomeModal").classList.add("show");
+}
+
+function closeWelcome(){
+    $("welcomeModal").classList.remove("show");
+}
+
+function prepareTeacherAttendance(){
+    $("teacherAttendanceEditId").value = '';
+    $("teacherAttendanceDate").value = today();
+    $("teacherAttendanceStatus").value = 'HADIR';
+    $("teacherAttendanceNote").value = '';
+
+    const teacherWrap = $("teacherAttendanceTeacherWrap");
+    const teacherSelect = $("teacherAttendanceTeacher");
+
+    if(currentUser.role === 'ADMIN'){
+        teacherWrap.classList.remove('hidden');
+        teacherSelect.innerHTML = '<option value="">-- Pilih Guru --</option>' +
+            getActiveTeachers().map(t =>
+                `<option value="${escapeHtml(t.id)}">${escapeHtml(t.nama || t.username)}</option>`
+            ).join('');
+        teacherSelect.value = '';
+    }else{
+        teacherWrap.classList.add('hidden');
+        teacherSelect.innerHTML = `<option value="${escapeHtml(currentUser.id)}">${escapeHtml(currentUser.nama || currentUser.username)}</option>`;
+        teacherSelect.value = currentUser.id;
+    }
+
+    populateTeacherAttendanceAssignments();
+}
+
+function editTeacherAttendance(id){
+    if(currentUser.role !== 'ADMIN'){
+        alert('Hanya administrator yang dapat mengedit kehadiran guru.');
+        return;
+    }
+    const r = DB.teacherAttendance.find(x => String(x.id) === String(id));
+    if(!r) return;
+    showPage('teacher-attendance');
+    $("teacherAttendanceEditId").value = r.id;
+    $("teacherAttendanceDate").value = String(r.tanggal || '').slice(0,10);
+    $("teacherAttendanceTeacher").value = r.guruId;
+    populateTeacherAttendanceAssignments();
+    $("teacherAttendanceSubject").value = r.mapelId;
+    populateTeacherAttendanceClasses();
+    $("teacherAttendanceClass").value = r.kelasId;
+    $("teacherAttendanceStatus").value = r.status || 'HADIR';
+    $("teacherAttendanceNote").value = r.catatan || '';
+}
+
+function populateTeacherAttendanceAssignments(){
+    const guruId = $('teacherAttendanceTeacher').value || currentUser.id;
+    const assignments = getTeacherAssignments(guruId);
+    const subjectRefs = [...new Set(assignments.map(a => String(a.mapelId || '').trim()).filter(Boolean))];
+
+    $('teacherAttendanceSubject').innerHTML =
+        '<option value="">-- Pilih Mapel --</option>' +
+        subjectRefs.map(ref => {
+            const s = findSubjectRef(ref);
+            const value = s ? s.id : ref;
+            const name = s ? s.nama : ref;
+            return `<option value="${escapeHtml(value)}">${escapeHtml(name)}</option>`;
+        }).join('');
+
+    $('teacherAttendanceClass').innerHTML = '<option value="">-- Pilih Kelas --</option>';
+}
+
+function populateTeacherAttendanceClasses(){
+    const guruId = $('teacherAttendanceTeacher').value || currentUser.id;
+    const mapelId = $('teacherAttendanceSubject').value;
+    const assignments = getTeacherAssignments(guruId).filter(a => sameRef(a.mapelId, mapelId, 'subject'));
+    const classRefs = [...new Set(assignments.map(a => String(a.kelasId || '').trim()).filter(Boolean))];
+
+    $('teacherAttendanceClass').innerHTML =
+        '<option value="">-- Pilih Kelas --</option>' +
+        classRefs.map(ref => {
+            const c = findClassRef(ref);
+            const value = c ? c.id : ref;
+            const name = c ? c.nama : ref;
+            return `<option value="${escapeHtml(value)}">${escapeHtml(name)}</option>`;
+        }).join('');
+}
+
+async function saveTeacherAttendance(){
+    const editId = $("teacherAttendanceEditId").value;
+    const tanggal = $("teacherAttendanceDate").value;
+    const guruId = $("teacherAttendanceTeacher").value || currentUser.id;
+    const mapelId = $("teacherAttendanceSubject").value;
+    const kelasId = $("teacherAttendanceClass").value;
+    const status = $("teacherAttendanceStatus").value;
+    const catatan = $("teacherAttendanceNote").value.trim();
+
+    if(!tanggal || !guruId || !mapelId || !kelasId || !status){
+        alert('Tanggal, guru, mapel, kelas dan status wajib diisi.');
+        return;
+    }
+
+    if(editId && currentUser.role !== 'ADMIN'){
+        alert('Hanya administrator yang dapat mengedit kehadiran guru.');
+        return;
+    }
+
+    const assignment = DB.assignments.find(a =>
+        String(a.status || 'AKTIF').toUpperCase() === 'AKTIF' &&
+        String(a.guruId) === String(guruId) &&
+        sameRef(a.mapelId, mapelId, 'subject') &&
+        sameRef(a.kelasId, kelasId, 'class')
+    );
+
+    if(!assignment){
+        alert('Penugasan aktif guru, mapel dan kelas tersebut tidak ditemukan.');
+        return;
+    }
+
+    if(!confirm(editId ? 'Simpan perubahan kehadiran guru?' : `Simpan kehadiran guru untuk tanggal ${tanggal}?`)) return;
+
+    try{
+        showStatus(editId ? 'Memperbarui kehadiran guru...' : 'Menyimpan kehadiran guru...');
+        await api('saveTeacherAttendance', { id: editId || '', tanggal, guruId, mapelId, kelasId, status, catatan });
+        await bootstrap();
+        alert(editId ? 'Kehadiran guru berhasil diperbarui.' : 'Kehadiran guru berhasil disimpan ke Google Sheets.');
+        showPage('teacher-recap');
+    }catch(error){
+        alert(error.message || String(error));
+    }
+}
+
+async function deleteTeacherAttendance(id){
+    if(currentUser.role !== 'ADMIN'){
+        alert('Hanya administrator yang dapat menghapus kehadiran guru.');
+        return;
+    }
+    if(!confirm('Hapus catatan kehadiran guru ini?')) return;
+    try{
+        await api('deleteTeacherAttendance', { id });
+        await bootstrap();
+        loadTeacherRecap();
+        alert('Catatan kehadiran guru berhasil dihapus.');
+    }catch(error){
+        alert(error.message || String(error));
+    }
+}
+
+function prepareTeacherRecap(){
+    const d = new Date();
+    const first = new Date(d.getFullYear(), d.getMonth(), 1);
+    $('teacherRecapStart').value = first.toISOString().slice(0,10);
+    $('teacherRecapEnd').value = today();
+    populateTeacherRecapFilters();
+    loadTeacherRecap();
+}
+
+function populateTeacherRecapFilters(){
+    const allowedAssignments = currentUser.role === 'ADMIN'
+        ? DB.assignments.filter(a => String(a.status || 'AKTIF').toUpperCase() === 'AKTIF')
+        : getTeacherAssignments(currentUser.id);
+
+    const teacherIds = currentUser.role === 'ADMIN'
+        ? getActiveTeachers().map(t => t.id)
+        : [currentUser.id];
+
+    $('teacherRecapTeacher').innerHTML =
+        '<option value="">Semua Guru</option>' +
+        getActiveTeachers().filter(t => teacherIds.includes(t.id)).map(t =>
+            `<option value="${escapeHtml(t.id)}">${escapeHtml(t.nama || t.username)}</option>`
+        ).join('');
+
+    const subjectIds = [...new Set(allowedAssignments.map(a => String(a.mapelId || '').trim()).filter(Boolean))];
+    $('teacherRecapSubject').innerHTML =
+        '<option value="">Semua Mapel</option>' +
+        subjectIds.map(ref => {
+            const s = findSubjectRef(ref);
+            const value = s ? s.id : ref;
+            const name = s ? s.nama : ref;
+            return `<option value="${escapeHtml(value)}">${escapeHtml(name)}</option>`;
+        }).join('');
+
+    const classIds = [...new Set(allowedAssignments.map(a => String(a.kelasId || '').trim()).filter(Boolean))];
+    $('teacherRecapClass').innerHTML =
+        '<option value="">Semua Kelas</option>' +
+        classIds.map(ref => {
+            const c = findClassRef(ref);
+            const value = c ? c.id : ref;
+            const name = c ? c.nama : ref;
+            return `<option value="${escapeHtml(value)}">${escapeHtml(name)}</option>`;
+        }).join('');
+}
+
+function loadTeacherRecap(){
+    const start = $("teacherRecapStart").value;
+    const end = $("teacherRecapEnd").value;
+    const guru = $("teacherRecapTeacher").value;
+    const mapel = $("teacherRecapSubject").value;
+    const kelas = $("teacherRecapClass").value;
+
+    let rows = DB.teacherAttendance.filter(a => {
+        const date = String(a.tanggal || '').slice(0,10);
+        if(start && date < start) return false;
+        if(end && date > end) return false;
+        if(currentUser.role !== 'ADMIN' && String(a.guruId) !== String(currentUser.id)) return false;
+        if(guru && String(a.guruId) !== String(guru)) return false;
+        if(mapel && !sameRef(a.mapelId, mapel, 'subject')) return false;
+        if(kelas && !sameRef(a.kelasId, kelas, 'class')) return false;
+        return true;
+    });
+
+    const recap = {};
+    rows.forEach(a => {
+        const key = String(a.guruId);
+        if(!recap[key]){
+            const teacher = DB.users.find(u => String(u.id) === String(a.guruId));
+            recap[key] = { guruId:a.guruId, nama:teacher ? (teacher.nama || teacher.username) : a.guruId, nip:teacher ? (teacher.nip || '-') : '-', HADIR:0, IZIN:0, SAKIT:0, ALPA:0 };
+        }
+        const status = String(a.status || '').toUpperCase();
+        if(recap[key][status] !== undefined) recap[key][status]++;
+    });
+
+    const list = Object.values(recap).sort((a,b) => String(a.nama).localeCompare(String(b.nama)));
+    const total = list.reduce((acc,r) => { acc.HADIR += r.HADIR; acc.IZIN += r.IZIN; acc.SAKIT += r.SAKIT; acc.ALPA += r.ALPA; return acc; }, {HADIR:0,IZIN:0,SAKIT:0,ALPA:0});
+    const totalAll = total.HADIR + total.IZIN + total.SAKIT + total.ALPA;
+    const percent = totalAll ? ((total.HADIR / totalAll) * 100).toFixed(1) : '0.0';
+
+    $("teacherRecapHadir").innerText = total.HADIR;
+    $("teacherRecapIzin").innerText = total.IZIN;
+    $("teacherRecapSakit").innerText = total.SAKIT;
+    $("teacherRecapAlpa").innerText = total.ALPA;
+    $("teacherRecapPercent").innerText = percent + '%';
+
+    $("teacherRecapTable").innerHTML = list.map((r,i) => {
+        const n = r.HADIR + r.IZIN + r.SAKIT + r.ALPA;
+        const p = n ? ((r.HADIR / n) * 100).toFixed(1) : '0.0';
+        return `<tr><td>${i+1}</td><td><b>${escapeHtml(r.nama)}</b></td><td>${escapeHtml(r.nip)}</td><td>${r.HADIR}</td><td>${r.IZIN}</td><td>${r.SAKIT}</td><td>${r.ALPA}</td><td><b>${n}</b></td><td><b>${p}%</b></td></tr>`;
+    }).join('');
+    if(!list.length) $("teacherRecapTable").innerHTML = `<tr><td colspan="9" class="text-center py-8 text-slate-500">Tidak ada data kehadiran guru pada periode/filter tersebut.</td></tr>`;
+
+    const detail = $("teacherRecapDetailTable");
+    if(currentUser.role !== 'ADMIN') {
+        $("teacherRecapActionHead").style.display = 'none';
+    } else {
+        $("teacherRecapActionHead").style.display = '';
+    }
+    detail.innerHTML = rows.sort((a,b) => String(b.tanggal).localeCompare(String(a.tanggal))).map((a,i) => {
+        const teacher = DB.users.find(u => String(u.id) === String(a.guruId));
+        const subject = findSubjectRef(a.mapelId);
+        const cls = findClassRef(a.kelasId);
+        const actions = currentUser.role === 'ADMIN' ? `<td class="whitespace-nowrap"><button class="btn btn-warning text-xs" onclick="editTeacherAttendance('${escapeHtml(a.id)}')"><i class="fa-solid fa-pen"></i> Edit</button> <button class="btn btn-danger text-xs" onclick="deleteTeacherAttendance('${escapeHtml(a.id)}')"><i class="fa-solid fa-trash"></i></button></td>` : '<td></td>';
+        return `<tr><td>${i+1}</td><td>${escapeHtml(String(a.tanggal||'').slice(0,10))}</td><td><b>${escapeHtml(teacher ? (teacher.nama||teacher.username) : a.guruId)}</b></td><td>${escapeHtml(subject ? subject.nama : a.mapelId)}</td><td>${escapeHtml(cls ? cls.nama : a.kelasId)}</td><td><span class="badge ${a.status==='HADIR'?'badge-green':a.status==='IZIN'?'badge-yellow':a.status==='SAKIT'?'badge-blue':'badge-red'}">${escapeHtml(a.status)}</span></td><td>${escapeHtml(a.catatan||'-')}</td>${actions}</tr>`;
+    }).join('');
+    if(!rows.length) detail.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-500">Tidak ada detail kehadiran.</td></tr>`;
+}
+
+function exportTeacherRecapExcel(){
+    const table = $('teacherRecapTable');
+    const rows = [];
+    table.querySelectorAll('tr').forEach(tr => {
+        const cells = [];
+        tr.querySelectorAll('th,td').forEach(td => cells.push(td.innerText.trim()));
+        if(cells.length) rows.push(cells);
+    });
+    if(!rows.length){ alert('Tidak ada data untuk diekspor.'); return; }
+
+    const data = [
+        ['No','Nama Guru','NIP/NUPTK','Hadir','Izin','Sakit','Alpa','Total','% Kehadiran'],
+        ...rows
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Rekap Guru');
+    XLSX.writeFile(wb, 'Rekap_Kehadiran_Guru_Bimbingan.xlsx');
+}
+
+
+/* =========================================================
    REKAP
 ========================================================= */
 
@@ -3930,130 +4375,47 @@ async function logout(){
     try{
 
         if(sessionToken){
+
             await api("logout");
+
         }
 
-    }catch(e){
+    }catch(e){}
 
-        console.error(
-            "Logout server gagal:",
-            e
-        );
+    currentUser=null;
+    sessionToken="";
 
-    }finally{
+    $("app").classList.add("hidden");
+    $("loginPage").classList.remove("hidden");
 
-        clearSession();
-
-        $("app")
-            .classList.add("hidden");
-
-        $("loginPage")
-            .classList.remove("hidden");
-
-        $("loginUsername").value="";
-        $("loginPassword").value="";
-    }
+    $("loginUsername").value="";
+    $("loginPassword").value="";
 }
 
-
-
-function showWelcomeModal(){
-    const name = currentUser && (currentUser.nama || currentUser.username) || "Pengguna";
-    const role = currentUser && currentUser.role === "ADMIN" ? "Administrator" : "Guru Pembimbing";
-    const elName = $("welcomeName");
-    const elRole = $("welcomeRole");
-    if(elName) elName.innerText = name;
-    if(elRole) elRole.innerText = role;
-    const modal = $("welcomeModal");
-    if(modal) modal.classList.add("show");
-}
-
-function closeWelcomeModal(){
-    const modal = $("welcomeModal");
-    if(modal) modal.classList.remove("show");
-}
-/* =========================================================
-   RESTORE SESSION SETELAH REFRESH
-========================================================= */
-
-async function restoreSession(){
-
-    const saved =
-        getSavedSession();
-
-    if(!saved){
-        return false;
-    }
-
-    try{
-
-        showStatus("Memulihkan sesi...");
-
-        sessionToken =
-            saved.token;
-
-        currentUser =
-            saved.user;
-
-        /*
-         * Bootstrap sekaligus menjadi
-         * pemeriksaan apakah token masih valid.
-         */
-        await bootstrap();
-
-        $("loginPage")
-            .classList.add("hidden");
-
-        $("app")
-            .classList.remove("hidden");
-
-        $("userName").innerText =
-            currentUser.nama ||
-            currentUser.username;
-
-        $("userRole").innerText =
-            currentUser.role === "ADMIN"
-                ? "Administrator"
-                : "Guru Pembimbing";
-
-        configureRole();
-
-        showPage("dashboard");
-
-        return true;
-
-    }catch(error){
-
-        console.error(
-            "Session tidak valid:",
-            error
-        );
-
-        clearSession();
-
-        $("app")
-            .classList.add("hidden");
-
-        $("loginPage")
-            .classList.remove("hidden");
-
-        return false;
-    }
-}
 
 /* =========================================================
    INITIAL
 ========================================================= */
 
+document.addEventListener("click", e=>{
+    if(e.target && e.target.id === "welcomeModal") closeWelcome();
+});
+
 document.addEventListener(
     "DOMContentLoaded",
-    async ()=>{
+    ()=>{
 
         $("attendanceDate").value =
             today();
 
         $("recapEnd").value =
             today();
+
+        if($("teacherAttendanceDate"))
+            $("teacherAttendanceDate").value = today();
+
+        if($("teacherRecapEnd"))
+            $("teacherRecapEnd").value = today();
 
         $("loginPassword")
             .addEventListener(
@@ -4063,11 +4425,6 @@ document.addEventListener(
                         login();
                 }
             );
-
-        /*
-         * Coba pulihkan login sebelumnya.
-         */
-        await restoreSession();
 
     }
 );
