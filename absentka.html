@@ -4,11 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="theme-color" content="#0f172a">
-<title>MADRASAH ALIYAH ABU DARRIN</title>
+<title>Absensi Bimbingan Siswa V5 - Realtime Supabase</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 *{box-sizing:border-box}
@@ -28,6 +29,8 @@ body{
     color:white;
     z-index:50;
     transition:.25s;
+    overflow-y:auto;
+    scrollbar-width:thin;
 }
 
 .main{
@@ -324,6 +327,11 @@ label{
     display:none!important;
 }
 
+.sidebar::-webkit-scrollbar{width:7px}
+.sidebar::-webkit-scrollbar-thumb{background:#334155;border-radius:10px}
+.sidebar::-webkit-scrollbar-track{background:transparent}
+.realtime-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 0 3px rgba(34,197,94,.15)}
+.db-tool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
 @media(max-width:900px){
     .sidebar{
         transform:translateX(-100%);
@@ -386,11 +394,11 @@ label{
         </div>
 
         <h1 class="text-2xl font-bold text-center mt-5">
-            MA ABU DARRIN
+            Absensi Bimbingan
         </h1>
 
         <p class="text-center text-slate-500 text-sm mt-1">
-            Absensi Bimbingan TKA MADA 2026
+            Sistem Absensi Bimbingan Siswa V4
         </p>
 
         <div class="mt-7">
@@ -417,7 +425,7 @@ label{
         </div>
 
         <div class="mt-5 text-xs text-center text-slate-500">
-            Hubungkan terlebih dahulu dengan Google Sheets melalui Apps Script.
+            Database realtime cloud. Tidak menggunakan Google Sheets saat aplikasi berjalan.
         </div>
 
     </div>
@@ -1493,6 +1501,22 @@ label{
 
                 </div>
 
+                <div class="card p-6 max-w-4xl mt-5">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-11 h-11 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center"><i class="fa-solid fa-database"></i></div>
+                        <div>
+                            <h3 class="font-bold">Administrasi Database</h3>
+                            <p class="text-sm text-slate-500">Backup seluruh data aplikasi tanpa Google Sheets.</p>
+                        </div>
+                    </div>
+                    <div class="db-tool-grid">
+                        <button class="btn btn-secondary" onclick="exportDatabaseJSON()"><i class="fa-solid fa-file-code"></i> Ekspor Database JSON</button>
+                        <button class="btn btn-success" onclick="exportDatabaseExcel()"><i class="fa-solid fa-file-excel"></i> Ekspor Semua Data Excel</button>
+                        <button class="btn btn-warning" onclick="openMigration()"><i class="fa-solid fa-cloud-arrow-down"></i> Migrasi Data Lama</button>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-3">Migrasi hanya dilakukan sekali untuk memindahkan data dari Apps Script lama ke database realtime. Setelah berhasil, aplikasi tidak lagi membaca Google Sheets.</p>
+                </div>
+
             </section>
 
         </div>
@@ -1842,6 +1866,30 @@ label{
 
 </div>
 
+
+<div id="migrationModal" class="modal">
+    <div class="modal-box">
+        <div class="p-5 border-b flex justify-between">
+            <h3 class="font-bold text-lg"><i class="fa-solid fa-cloud-arrow-down mr-2"></i>Migrasi Database Lama</h3>
+            <button onclick="closeModal('migrationModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-5">
+            <p class="text-sm text-slate-600 mb-4">Masukkan akun administrator lama. Data guru, siswa, mapel, kelas, penugasan, absensi, kehadiran guru, dan pengaturan akan disalin ke database realtime.</p>
+            <label>URL Apps Script lama</label>
+            <input id="legacyApiUrl" class="input mb-4">
+            <label>Username Admin lama</label>
+            <input id="legacyUsername" class="input mb-4">
+            <label>Password Admin lama</label>
+            <input id="legacyPassword" type="password" class="input mb-4">
+            <label>Password awal akun guru hasil migrasi</label>
+            <input id="legacyDefaultPassword" type="password" class="input mb-4" placeholder="Minimal 8 karakter">
+            <div class="flex justify-end gap-2">
+                <button class="btn btn-secondary" onclick="closeModal('migrationModal')">Batal</button>
+                <button class="btn btn-warning" onclick="migrateLegacyData()"><i class="fa-solid fa-database"></i> Mulai Migrasi</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div id="statusBox" class="status">
     Memproses...
@@ -3840,7 +3888,7 @@ async function saveTeacherAttendance(){
         showStatus(editId ? 'Memperbarui kehadiran guru...' : 'Menyimpan kehadiran guru...');
         await api('saveTeacherAttendance', { id: editId || '', tanggal, guruId, mapelId, kelasId, status, catatan });
         await bootstrap();
-        alert(editId ? 'Kehadiran guru berhasil diperbarui.' : 'Kehadiran guru berhasil disimpan ke Google Sheets.');
+        alert(editId ? 'Kehadiran guru berhasil diperbarui.' : 'Kehadiran guru berhasil disimpan ke database realtime.');
         showPage('teacher-recap');
     }catch(error){
         alert(error.message || String(error));
@@ -4429,6 +4477,185 @@ document.addEventListener(
     }
 );
 
+</script>
+
+<script>
+/* =========================================================
+   REALTIME DATABASE MODE — SUPABASE
+   Google Sheets / Apps Script hanya dipakai saat migrasi.
+========================================================= */
+const SUPABASE_URL = "https://jvvdbbstwcwrnkjfznfq.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_t0MvaWFKdK1G-xvScHKPEw_5sIw9H3K";
+const LEGACY_API_URL = "https://script.google.com/macros/s/AKfycbwo7aiLkCLnMmqOWFWCDaVmJ5ENLl0oCA_jmvbCbeRRnGagQSIi1rUuoIsuUTjHoVi2/exec";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SESSION_KEY = "absensi_bimbingan_session_v5";
+let realtimeChannel = null;
+let restoringSession = false;
+
+function dbConfigured(){
+    return SUPABASE_URL && !SUPABASE_URL.includes("GANTI_DENGAN") && SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes("GANTI_DENGAN");
+}
+
+async function api(action,data={}){
+    if(!dbConfigured()) throw new Error("Supabase belum dikonfigurasi. Isi SUPABASE_URL dan SUPABASE_ANON_KEY pada file HTML.");
+    let result, error;
+    if(action === "login") {
+        ({data:result,error} = await sb.rpc("app_login",{
+            p_username: data.username || "",
+            p_password: data.password || ""
+        }));
+    } else {
+        ({data:result,error} = await sb.rpc("app_api",{
+            p_action: action,
+            p_token: sessionToken || localStorage.getItem(SESSION_KEY) || "",
+            p_data: data || {}
+        }));
+    }
+    if(error) throw new Error(error.message || "Database error");
+    if(!result || result.success === false) throw new Error((result && result.message) || "Permintaan database gagal.");
+    if(action === "login" && result.token){
+        sessionToken = result.token;
+        localStorage.setItem(SESSION_KEY,result.token);
+    }
+    if(action === "logout") localStorage.removeItem(SESSION_KEY);
+    return result;
+}
+
+async function bootstrap(){
+    const result = await api("bootstrap");
+    if(result.user) currentUser = result.user;
+    DB.users = result.users || [];
+    DB.students = result.students || [];
+    DB.subjects = result.subjects || [];
+    DB.classes = result.classes || [];
+    DB.assignments = result.assignments || [];
+    DB.attendance = result.attendance || [];
+    DB.teacherAttendance = result.teacherAttendance || [];
+    DB.settings = result.settings || {};
+    if(currentUser){
+        $("userName").innerText = currentUser.nama || currentUser.username;
+        $("userRole").innerText = currentUser.role === "ADMIN" ? "Administrator" : "Guru Pembimbing";
+        configureRole();
+    }
+    updateDashboard();
+    return result;
+}
+
+function setupRealtime(){
+    if(!dbConfigured() || realtimeChannel) return;
+    realtimeChannel = sb.channel("absensi-bimbingan-realtime")
+        .on("postgres_changes",{event:"INSERT",schema:"public",table:"realtime_events"},async()=>{
+            if(!sessionToken) return;
+            try{ await bootstrap(); }catch(e){ console.warn("Realtime refresh:",e.message); }
+        })
+        .subscribe();
+}
+
+function showApp(){
+    $("loginPage").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    configureRole();
+    showPage("dashboard");
+}
+
+async function restoreSavedSession(){
+    if(restoringSession || !dbConfigured()) return;
+    restoringSession = true;
+    const saved = localStorage.getItem(SESSION_KEY);
+    if(!saved){ restoringSession=false; return; }
+    sessionToken = saved;
+    try{
+        await bootstrap();
+        showApp();
+    }catch(e){
+        localStorage.removeItem(SESSION_KEY);
+        sessionToken = "";
+    }finally{ restoringSession=false; }
+}
+
+async function login(){
+    const username = $("loginUsername").value.trim();
+    const password = $("loginPassword").value;
+    if(!username || !password){ alert("Username dan password harus diisi."); return; }
+    try{
+        showStatus("Memeriksa login...");
+        const result = await api("login",{username,password});
+        sessionToken = result.token;
+        currentUser = result.user;
+        await bootstrap();
+        showApp();
+        showWelcome();
+    }catch(error){
+        const msg = error.message || String(error);
+        alert(msg + (msg === 'Username atau password salah.' ? '\n\nPastikan SQL perbaikan Supabase sudah dijalankan dan akun admin menggunakan password Admin12345!.' : ''));
+    }
+}
+
+async function logout(){
+    try{ if(sessionToken) await api("logout"); }catch(e){}
+    currentUser=null; sessionToken=""; localStorage.removeItem(SESSION_KEY);
+    $("app").classList.add("hidden"); $("loginPage").classList.remove("hidden");
+    $("loginUsername").value=""; $("loginPassword").value="";
+}
+
+function exportDatabaseJSON(){
+    if(!currentUser || currentUser.role !== "ADMIN"){ alert("Hanya administrator yang dapat mengekspor database."); return; }
+    const payload = {version:"5-realtime",exportedAt:new Date().toISOString(),users:DB.users,students:DB.students,subjects:DB.subjects,classes:DB.classes,assignments:DB.assignments,attendance:DB.attendance,teacherAttendance:DB.teacherAttendance,settings:DB.settings};
+    const blob = new Blob([JSON.stringify(payload,null,2)],{type:"application/json;charset=utf-8"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="Backup_Database_Absensi_"+today()+".json"; a.click(); URL.revokeObjectURL(a.href);
+}
+
+function exportDatabaseExcel(){
+    if(!currentUser || currentUser.role !== "ADMIN"){ alert("Hanya administrator yang dapat mengekspor database."); return; }
+    const wb=XLSX.utils.book_new();
+    const add=(name,rows)=>{ const ws=XLSX.utils.json_to_sheet(rows||[]); XLSX.utils.book_append_sheet(wb,ws,name.slice(0,31)); };
+    add("Guru",DB.users); add("Siswa",DB.students); add("Mapel",DB.subjects); add("Kelas",DB.classes); add("Penugasan",DB.assignments); add("Absensi Siswa",DB.attendance); add("Absensi Guru",DB.teacherAttendance);
+    add("Pengaturan",Object.entries(DB.settings||{}).map(([k,v])=>({key:k,value:v})));
+    XLSX.writeFile(wb,"Database_Absensi_Bimbingan_"+today()+".xlsx");
+}
+
+function openMigration(){
+    if(currentUser?.role !== "ADMIN"){ alert("Hanya administrator yang dapat melakukan migrasi."); return; }
+    $("legacyApiUrl").value=LEGACY_API_URL; $("legacyUsername").value=""; $("legacyPassword").value=""; $("legacyDefaultPassword").value=""; $("migrationModal").classList.add("show");
+}
+
+async function legacyCall(url,payload){
+    const response=await fetch(url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});
+    const text=await response.text(); let json; try{json=JSON.parse(text)}catch(e){throw new Error("Server lama tidak mengembalikan JSON.")}
+    if(!json.success) throw new Error(json.message||"Permintaan ke server lama gagal.");
+    return json;
+}
+
+async function migrateLegacyData(){
+    const url=$("legacyApiUrl").value.trim(), username=$("legacyUsername").value.trim(), password=$("legacyPassword").value, defaultPassword=$("legacyDefaultPassword").value;
+    if(!url||!username||!password||defaultPassword.length<8){ alert("URL, akun admin lama, password lama, dan password awal guru wajib diisi. Password awal minimal 8 karakter."); return; }
+    if(!confirm("Migrasikan seluruh database lama ke database realtime sekarang? Data lama di database realtime yang memiliki ID sama akan diperbarui.")) return;
+    try{
+        showStatus("Login ke server lama...");
+        const oldLogin=await legacyCall(url,{action:"login",token:"",username,password});
+        showStatus("Mengambil database lama...");
+        const old=await legacyCall(url,{action:"bootstrap",token:oldLogin.token});
+        const groups=[
+            ["users",old.users||[]],["students",old.students||[]],["subjects",old.subjects||[]],["classes",old.classes||[]],["assignments",old.assignments||[]],["attendance",old.attendance||[]],["teacherAttendance",old.teacherAttendance||[]]
+        ];
+        let done=0;
+        for(const [entity,rows] of groups){
+            for(let i=0;i<rows.length;i+=150){
+                await api("importLegacyBatch",{entity,rows:rows.slice(i,i+150),defaultPassword});
+                done+=Math.min(150,rows.length-i); showStatus("Migrasi "+entity+": "+done+" data...");
+            }
+        }
+        if(old.settings) await api("importLegacySettings",{settings:old.settings});
+        await bootstrap();
+        closeModal("migrationModal");
+        alert("Migrasi selesai. Total data diproses: "+done+". Aplikasi sekarang menggunakan database realtime, bukan Google Sheets.");
+    }catch(e){ alert("Migrasi gagal:\n\n"+(e.message||e)); }
+}
+
+document.addEventListener("DOMContentLoaded",async()=>{
+    setupRealtime();
+    if(dbConfigured()) await restoreSavedSession();
+});
 </script>
 
 </body>
