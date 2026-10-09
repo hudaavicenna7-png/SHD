@@ -893,6 +893,16 @@ label{
                         </div>
                     </div>
 
+                    <div class="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                        <h3 class="font-bold text-blue-900 mb-1"><i class="fa-solid fa-location-crosshairs mr-2"></i>Cek Lokasi Kehadiran</h3>
+                        <p class="text-sm text-blue-800 mb-3">Periksa posisi perangkat sebelum menyimpan kehadiran. Untuk guru, absensi berstatus HADIR hanya dapat dikirim jika lokasi berada dalam radius sekolah yang diatur admin.</p>
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <button type="button" class="btn btn-secondary" onclick="checkTeacherAttendanceLocation()"><i class="fa-solid fa-location-dot"></i> Cek Lokasi Saya Saat Ini</button>
+                            <button type="button" class="btn btn-secondary" onclick="openSchoolLocationMap()"><i class="fa-solid fa-map-location-dot"></i> Lihat Lokasi Sekolah</button>
+                        </div>
+                        <p id="teacherAttendanceLocationStatus" class="text-sm text-slate-700" role="status" aria-live="polite">Belum ada pemeriksaan lokasi. Tekan tombol untuk membaca GPS perangkat.</p>
+                    </div>
+
                     <div class="mt-5 flex flex-wrap gap-2">
                         <button class="btn btn-primary" onclick="saveTeacherAttendance()">
                             <i class="fa-solid fa-cloud-arrow-up"></i>
@@ -1178,6 +1188,8 @@ label{
                     <div class="flex flex-wrap gap-2">
                     <button class="btn btn-secondary" onclick="downloadMasterTemplate('teachers')"><i class="fa-solid fa-download"></i> Template Excel</button>
                     <button class="btn btn-success" onclick="document.getElementById('importTeachersFile').click()"><i class="fa-solid fa-file-excel"></i> Import Excel</button>
+                    <button class="btn btn-primary" onclick="document.getElementById('importTeachersJson').click()"><i class="fa-solid fa-file-code"></i> Import JSON</button>
+                    <input id="importTeachersJson" type="file" accept=".json,application/json" class="hidden" onchange="importMasterData('teachers',this)">
                     <button class="btn btn-danger" onclick="bulkDelete('teachers')"><i class="fa-solid fa-trash"></i> Hapus Kolektif</button>
                     <input id="importTeachersFile" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="importMasterData('teachers',this)">
                     <button class="btn btn-primary" onclick="openTeacherModal()">
@@ -1322,6 +1334,8 @@ label{
                     <div class="flex flex-wrap gap-2">
                     <button class="btn btn-secondary" onclick="downloadMasterTemplate('subjects')"><i class="fa-solid fa-download"></i> Template Excel</button>
                     <button class="btn btn-success" onclick="document.getElementById('importSubjectsFile').click()"><i class="fa-solid fa-file-excel"></i> Import Excel</button>
+                    <button class="btn btn-primary" onclick="document.getElementById('importSubjectsJson').click()"><i class="fa-solid fa-file-code"></i> Import JSON</button>
+                    <input id="importSubjectsJson" type="file" accept=".json,application/json" class="hidden" onchange="importMasterData('subjects',this)">
                     <button class="btn btn-danger" onclick="bulkDelete('subjects')"><i class="fa-solid fa-trash"></i> Hapus Kolektif</button>
                     <input id="importSubjectsFile" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="importMasterData('subjects',this)">
                     <button class="btn btn-primary" onclick="openSubjectModal()">
@@ -1379,6 +1393,8 @@ label{
                     <div class="flex flex-wrap gap-2">
                     <button class="btn btn-secondary" onclick="downloadMasterTemplate('classes')"><i class="fa-solid fa-download"></i> Template Excel</button>
                     <button class="btn btn-success" onclick="document.getElementById('importClassesFile').click()"><i class="fa-solid fa-file-excel"></i> Import Excel</button>
+                    <button class="btn btn-primary" onclick="document.getElementById('importClassesJson').click()"><i class="fa-solid fa-file-code"></i> Import JSON</button>
+                    <input id="importClassesJson" type="file" accept=".json,application/json" class="hidden" onchange="importMasterData('classes',this)">
                     <button class="btn btn-danger" onclick="bulkDelete('classes')"><i class="fa-solid fa-trash"></i> Hapus Kolektif</button>
                     <input id="importClassesFile" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="importMasterData('classes',this)">
                     <button class="btn btn-primary" onclick="openClassModal()">
@@ -1436,6 +1452,8 @@ label{
                     <div class="flex flex-wrap gap-2">
                     <button class="btn btn-secondary" onclick="downloadMasterTemplate('assignments')"><i class="fa-solid fa-download"></i> Template Excel</button>
                     <button class="btn btn-success" onclick="document.getElementById('importAssignmentsFile').click()"><i class="fa-solid fa-file-excel"></i> Import Excel</button>
+                    <button class="btn btn-primary" onclick="document.getElementById('importAssignmentsJson').click()"><i class="fa-solid fa-file-code"></i> Import JSON</button>
+                    <input id="importAssignmentsJson" type="file" accept=".json,application/json" class="hidden" onchange="importMasterData('assignments',this)">
                     <button class="btn btn-danger" onclick="bulkDelete('assignments')"><i class="fa-solid fa-trash"></i> Hapus Kolektif</button>
                     <input id="importAssignmentsFile" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="importMasterData('assignments',this)">
                     <button class="btn btn-primary" onclick="openAssignmentModal()">
@@ -1513,6 +1531,29 @@ label{
                                placeholder="2026/2027">
                     </div>
 
+                    <div class="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                        <h3 class="font-bold text-blue-900 mb-1"><i class="fa-solid fa-location-dot mr-2"></i>Validasi Lokasi Kehadiran Guru</h3>
+                        <p class="text-sm text-blue-800 mb-3">Titik sekolah diambil dari pin Google Maps MA Abu Darrin. Guru yang mengisi kehadiran sendiri harus mengaktifkan GPS dan berada dalam radius yang ditetapkan.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label for="settingSchoolLat">Lintang sekolah (latitude)</label>
+                                <input id="settingSchoolLat" type="number" step="any" class="input" value="-7.1825368" placeholder="-7.1825368">
+                            </div>
+                            <div>
+                                <label for="settingSchoolLng">Bujur sekolah (longitude)</label>
+                                <input id="settingSchoolLng" type="number" step="any" class="input" value="111.8649243" placeholder="111.8649243">
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <button type="button" class="btn btn-secondary" onclick="checkCurrentLocation()"><i class="fa-solid fa-location-crosshairs"></i> Cek Lokasi Saya Saat Ini</button>
+                            <button type="button" class="btn btn-primary" onclick="useCurrentLocationForSchool()"><i class="fa-solid fa-map-pin"></i> Gunakan sebagai Lokasi Sekolah</button>
+                        </div>
+                        <p id="currentLocationStatus" class="text-sm text-slate-600 mb-3" role="status">Klik “Cek Lokasi Saya Saat Ini” untuk membaca koordinat GPS perangkat.</p>
+                        <label for="settingLocationRadius">Radius yang diizinkan (meter)</label>
+                        <input id="settingLocationRadius" type="number" min="20" max="2000" step="10" class="input" value="100" placeholder="100">
+                        <p class="text-xs text-slate-500 mt-2">Saran awal 100 meter. Gunakan nilai lebih besar jika GPS perangkat sering tidak akurat.</p>
+                    </div>
+
                     <button class="btn btn-primary"
                             onclick="saveSettings()">
                         <i class="fa-solid fa-save"></i>
@@ -1542,8 +1583,14 @@ label{
                         <button class="btn btn-secondary" onclick="exportDatabaseJSON()"><i class="fa-solid fa-file-code"></i> Ekspor Database JSON</button>
                         <button class="btn btn-success" onclick="exportDatabaseExcel()"><i class="fa-solid fa-file-excel"></i> Ekspor Semua Data Excel</button>
                         <button class="btn btn-warning" onclick="openMigration()"><i class="fa-solid fa-cloud-arrow-down"></i> Migrasi Data Lama</button>
+                        <button class="btn btn-primary" onclick="document.getElementById('importFullDatabaseJSON').click()"><i class="fa-solid fa-file-import"></i> Import Seluruh Database JSON</button>
+                        <input id="importFullDatabaseJSON" type="file" accept=".json,application/json" class="hidden" onchange="importFullDatabaseJSON(this)">
                     </div>
-                    <p class="text-xs text-slate-500 mt-3">Migrasi hanya dilakukan sekali untuk memindahkan data dari Apps Script lama ke database realtime. Setelah berhasil, aplikasi tidak lagi membaca Google Sheets.</p>
+                    <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                        <p class="text-sm font-semibold text-amber-900"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Sebelum import</p>
+                        <p class="text-xs text-amber-800 mt-1">Gunakan file hasil “Ekspor Database JSON” dari aplikasi ini. Proses mengirim data guru/akun, siswa, mapel, kelas, penugasan, absensi siswa, kehadiran guru, dan pengaturan ke backend. Ekspor cadangan terbaru terlebih dahulu. Data dengan ID yang sama dapat diperbarui; proses ini tidak otomatis menghapus data yang tidak ada di file.</p>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-3">Migrasi hanya dilakukan untuk memindahkan data dari Apps Script lama ke database realtime. Setelah berhasil, aplikasi menggunakan database realtime.</p>
                 </div>
 
             </section>
@@ -3770,7 +3817,7 @@ async function saveAttendance(){
     await bootstrap();
 
     alert(
-        "Absensi berhasil disimpan, silahkan cek menu rekap."
+        "Absensi berhasil disimpan ke Google Sheets."
     );
 }
 
@@ -3880,6 +3927,125 @@ function populateTeacherAttendanceClasses(){
         }).join('');
 }
 
+const DEFAULT_SCHOOL_LOCATION = { lat: -7.1825368, lng: 111.8649243 };
+let lastCheckedBrowserLocation = null;
+
+function getSchoolLocation(){
+    const lat = Number(DB.settings.schoolLat ?? DB.settings.school_lat ?? DEFAULT_SCHOOL_LOCATION.lat);
+    const lng = Number(DB.settings.schoolLng ?? DB.settings.school_lng ?? DEFAULT_SCHOOL_LOCATION.lng);
+    if(!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180){
+        return DEFAULT_SCHOOL_LOCATION;
+    }
+    return { lat, lng };
+}
+
+async function checkCurrentLocation(){
+    const status = $("currentLocationStatus");
+    if(status) status.textContent = "Sedang membaca lokasi GPS perangkat...";
+    try{
+        const position = await getBrowserLocation();
+        lastCheckedBrowserLocation = position;
+        if(status) status.textContent = `Lokasi perangkat: ${position.lat.toFixed(7)}, ${position.lng.toFixed(7)} | Akurasi ±${Math.round(position.accuracy)} meter. Jika ini titik sekolah, klik “Gunakan sebagai Lokasi Sekolah”, lalu simpan pengaturan.`;
+    }catch(error){
+        lastCheckedBrowserLocation = null;
+        if(status) status.textContent = error.message || "Gagal membaca lokasi perangkat.";
+        alert(error.message || "Gagal membaca lokasi perangkat.");
+    }
+}
+
+function useCurrentLocationForSchool(){
+    if(!lastCheckedBrowserLocation){
+        alert("Silakan klik ‘Cek Lokasi Saya Saat Ini’ terlebih dahulu.");
+        return;
+    }
+    if(lastCheckedBrowserLocation.accuracy > 150){
+        alert(`Akurasi GPS masih rendah (±${Math.round(lastCheckedBrowserLocation.accuracy)} meter). Coba lagi di area dengan sinyal GPS lebih baik.`);
+        return;
+    }
+    $("settingSchoolLat").value = lastCheckedBrowserLocation.lat.toFixed(7);
+    $("settingSchoolLng").value = lastCheckedBrowserLocation.lng.toFixed(7);
+    const status = $("currentLocationStatus");
+    if(status) status.textContent = "Koordinat baru diisikan ke pengaturan. Klik ‘Simpan Pengaturan’ untuk menyimpannya sebagai lokasi sekolah.";
+}
+
+function distanceMeters(lat1, lon1, lat2, lon2){
+    const toRad = value => value * Math.PI / 180;
+    const earthRadius = 6371000;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function getBrowserLocation(){
+    return new Promise((resolve, reject) => {
+        if(!navigator.geolocation){
+            reject(new Error('Browser/perangkat ini tidak mendukung GPS lokasi.'));
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            position => resolve({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                accuracy: position.coords.accuracy
+            }),
+            error => {
+                const messages = {
+                    1: 'Izin lokasi ditolak. Aktifkan izin lokasi untuk situs ini lalu coba lagi.',
+                    2: 'Lokasi perangkat belum dapat ditentukan. Aktifkan GPS dan coba lagi.',
+                    3: 'Pengambilan lokasi terlalu lama. Coba lagi di area dengan sinyal GPS lebih baik.'
+                };
+                reject(new Error(messages[error.code] || 'Gagal membaca lokasi perangkat.'));
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+    });
+}
+
+async function checkTeacherAttendanceLocation(){
+    const status = $("teacherAttendanceLocationStatus");
+    if(status) status.textContent = "Sedang membaca lokasi GPS perangkat...";
+    try{
+        const position = await getBrowserLocation();
+        const schoolLocation = getSchoolLocation();
+        const radius = Number(DB.settings.radiusLokasi || DB.settings.locationRadius || 100);
+        const distance = distanceMeters(position.lat, position.lng, schoolLocation.lat, schoolLocation.lng);
+        const inRadius = Number.isFinite(radius) && radius >= 20 && radius <= 2000 && distance <= radius;
+        const accuracyText = `Akurasi GPS ±${Math.round(position.accuracy)} m`;
+        const resultText = `Koordinat perangkat: ${position.lat.toFixed(7)}, ${position.lng.toFixed(7)}. Jarak dari sekolah: sekitar ${Math.round(distance)} m. Radius: ${radius} m. ${accuracyText}.`;
+        if(status){
+            status.textContent = (inRadius && position.accuracy <= 150 ? "LOKASI MEMENUHI SYARAT. " : "LOKASI BELUM MEMENUHI SYARAT. ") + resultText + (position.accuracy > 150 ? " Akurasi GPS terlalu rendah; coba lagi di area terbuka." : inRadius ? " Anda dapat melanjutkan proses kehadiran." : " Anda berada di luar radius sekolah.");
+            status.className = "text-sm " + (inRadius && position.accuracy <= 150 ? "text-green-700" : "text-red-700");
+        }
+    }catch(error){
+        if(status){ status.textContent = error.message || "Gagal membaca lokasi perangkat."; status.className = "text-sm text-red-700"; }
+        alert(error.message || "Gagal membaca lokasi perangkat.");
+    }
+}
+
+function openSchoolLocationMap(){
+    const location = getSchoolLocation();
+    window.open(`https://www.google.com/maps?q=${encodeURIComponent(location.lat + "," + location.lng)}`, "_blank", "noopener");
+}
+
+async function validateTeacherLocation(){
+    const radius = Number(DB.settings.radiusLokasi || DB.settings.locationRadius || 100);
+    if(!Number.isFinite(radius) || radius < 20 || radius > 2000){
+        throw new Error('Radius lokasi sekolah belum valid. Minta admin memeriksa Pengaturan.');
+    }
+    const position = await getBrowserLocation();
+    const schoolLocation = getSchoolLocation();
+    const distance = distanceMeters(position.lat, position.lng, schoolLocation.lat, schoolLocation.lng);
+    if(distance > radius){
+        throw new Error(`Absensi ditolak karena Anda berada di luar radius sekolah. Jarak terukur sekitar ${Math.round(distance)} meter, sedangkan batas yang diizinkan ${radius} meter.`);
+    }
+    if(position.accuracy > 150){
+        throw new Error(`Akurasi GPS masih rendah (±${Math.round(position.accuracy)} meter). Aktifkan GPS dengan akurasi tinggi dan coba lagi.`);
+    }
+    return { lokasiLat: position.lat, lokasiLng: position.lng, jarakLokasi: Math.round(distance), akurasiLokasi: Math.round(position.accuracy) };
+}
+
 async function saveTeacherAttendance(){
     const editId = $("teacherAttendanceEditId").value;
     const tanggal = $("teacherAttendanceDate").value;
@@ -3911,11 +4077,22 @@ async function saveTeacherAttendance(){
         return;
     }
 
+    let locationData = {};
+    if(currentUser.role !== 'ADMIN'){
+        try{
+            showStatus('Memeriksa lokasi perangkat...');
+            locationData = await validateTeacherLocation();
+        }catch(locationError){
+            alert(locationError.message || 'Lokasi sekolah tidak dapat divalidasi.');
+            return;
+        }
+    }
+
     if(!confirm(editId ? 'Simpan perubahan kehadiran guru?' : `Simpan kehadiran guru untuk tanggal ${tanggal}?`)) return;
 
     try{
         showStatus(editId ? 'Memperbarui kehadiran guru...' : 'Menyimpan kehadiran guru...');
-        await api('saveTeacherAttendance', { id: editId || '', tanggal, guruId, mapelId, kelasId, status, catatan });
+        await api('saveTeacherAttendance', { id: editId || '', tanggal, guruId, mapelId, kelasId, status, catatan, ...locationData });
         await bootstrap();
         alert(editId ? 'Kehadiran guru berhasil diperbarui.' : 'Kehadiran guru berhasil disimpan ke database realtime.');
         showPage('teacher-recap');
@@ -4418,9 +4595,28 @@ function loadSettings(){
         DB.settings.tahun ||
         DB.settings.year ||
         "";
+
+    const radius = Number(DB.settings.radiusLokasi || DB.settings.locationRadius || 100);
+    $("settingLocationRadius").value = Number.isFinite(radius) && radius >= 20 ? radius : 100;
+    const schoolLocation = getSchoolLocation();
+    $("settingSchoolLat").value = schoolLocation.lat;
+    $("settingSchoolLng").value = schoolLocation.lng;
 }
 
 async function saveSettings(){
+
+    const locationRadius = Number($("settingLocationRadius").value);
+    const schoolLat = Number($("settingSchoolLat").value);
+    const schoolLng = Number($("settingSchoolLng").value);
+    if(!Number.isFinite(schoolLat) || schoolLat < -90 || schoolLat > 90 || !Number.isFinite(schoolLng) || schoolLng < -180 || schoolLng > 180){
+        alert("Koordinat sekolah tidak valid. Periksa latitude dan longitude.");
+        return;
+    }
+    if(!Number.isFinite(locationRadius) || locationRadius < 20 || locationRadius > 2000){
+        alert("Radius lokasi harus antara 20 sampai 2.000 meter.");
+        $("settingLocationRadius").focus();
+        return;
+    }
 
     await api("saveSetting",{
 
@@ -4431,7 +4627,11 @@ async function saveSettings(){
             $("settingPrincipal").value.trim(),
 
         tahun:
-            $("settingYear").value.trim()
+            $("settingYear").value.trim(),
+
+        radiusLokasi: locationRadius,
+        schoolLat,
+        schoolLng
 
     });
 
@@ -4530,8 +4730,17 @@ async function importMasterData(type,input){
  const file=input.files?.[0]; if(!file)return;
  if(!adminOnly()){input.value='';return;}
  try{
-  const buf=await file.arrayBuffer(),wb=XLSX.read(buf,{type:'array'}),sheet=wb.Sheets[wb.SheetNames[0]];
-  const rows=XLSX.utils.sheet_to_json(sheet,{defval:''}); if(!rows.length)throw new Error('File Excel tidak berisi baris data.');
+  let rows=[];
+  if((file.name||'').toLowerCase().endsWith('.json') || file.type==='application/json'){
+   const parsed=JSON.parse(await file.text());
+   const candidate=Array.isArray(parsed)?parsed:(parsed&&typeof parsed==='object'?(parsed[type]||parsed.data||parsed.rows||parsed.items):null);
+   if(!Array.isArray(candidate))throw new Error('Format JSON harus berupa array data, atau objek dengan properti '+type+', data, rows, atau items.');
+   rows=candidate;
+  }else{
+   const buf=await file.arrayBuffer(),wb=XLSX.read(buf,{type:'array'}),sheet=wb.Sheets[wb.SheetNames[0]];
+   rows=XLSX.utils.sheet_to_json(sheet,{defval:''});
+  }
+  if(!rows.length)throw new Error('File tidak berisi baris data.');
   const norm=v=>String(v??'').trim().toLowerCase();
   let done=0,skipped=[];
   for(let i=0;i<rows.length;i++){
@@ -4719,6 +4928,59 @@ function exportDatabaseExcel(){
     add("Guru",DB.users); add("Siswa",DB.students); add("Mapel",DB.subjects); add("Kelas",DB.classes); add("Penugasan",DB.assignments); add("Absensi Siswa",DB.attendance); add("Absensi Guru",DB.teacherAttendance);
     add("Pengaturan",Object.entries(DB.settings||{}).map(([k,v])=>({key:k,value:v})));
     XLSX.writeFile(wb,"Database_Absensi_Bimbingan_"+today()+".xlsx");
+}
+
+async function importFullDatabaseJSON(input){
+    if(!currentUser || currentUser.role !== "ADMIN"){
+        alert("Hanya administrator yang dapat mengimpor seluruh database.");
+        input.value="";
+        return;
+    }
+    const file=input.files?.[0];
+    if(!file) return;
+    try{
+        const raw=JSON.parse(await file.text());
+        if(!raw || typeof raw!=="object" || Array.isArray(raw)) throw new Error("Format file tidak valid. Pilih file hasil Ekspor Database JSON.");
+        const groups=[
+            ["users",raw.users],
+            ["students",raw.students],
+            ["subjects",raw.subjects],
+            ["classes",raw.classes],
+            ["assignments",raw.assignments],
+            ["attendance",raw.attendance],
+            ["teacherAttendance",raw.teacherAttendance]
+        ];
+        const hasData=groups.some(([,rows])=>Array.isArray(rows)) || (raw.settings && typeof raw.settings==="object" && !Array.isArray(raw.settings));
+        if(!hasData) throw new Error("File tidak memuat struktur database yang dikenali.");
+        const summary=groups.map(([name,rows])=>name+": "+(Array.isArray(rows)?rows.length:0)).join("\n");
+        if(!confirm("Import seluruh data dari file ini?\n\n"+summary+"\nPengaturan: "+(raw.settings&&typeof raw.settings==="object"?Object.keys(raw.settings).length:0)+" nilai\n\nBuat backup terlebih dahulu. Data dengan ID sama dapat diperbarui; data lain tidak otomatis dihapus. Lanjutkan?")) return;
+        let defaultPassword="";
+        if(Array.isArray(raw.users) && raw.users.length){
+            defaultPassword=prompt("Masukkan password awal (minimal 8 karakter) untuk akun yang perlu dibuat ulang saat import. Jika backend mempertahankan kredensial yang ada, nilai ini mungkin tidak digunakan:");
+            if(defaultPassword===null) return;
+            if(defaultPassword.length<8) throw new Error("Password awal harus minimal 8 karakter.");
+        }
+        let total=0;
+        for(const [entity,rows] of groups){
+            if(!Array.isArray(rows) || !rows.length) continue;
+            for(let i=0;i<rows.length;i+=150){
+                await api("importLegacyBatch",{entity,rows:rows.slice(i,i+150),defaultPassword});
+                total+=Math.min(150,rows.length-i);
+                showStatus("Import JSON: "+entity+" ("+Math.min(i+150,rows.length)+"/"+rows.length+")...");
+            }
+        }
+        if(raw.settings && typeof raw.settings==="object" && !Array.isArray(raw.settings)){
+            await api("importLegacySettings",{settings:raw.settings});
+        }
+        await bootstrap();
+        loadSettings();
+        renderTeachers(); renderSubjects(); renderClasses(); renderAssignments();
+        alert("Import JSON selesai. Total baris data yang dikirim: "+total+". Pengaturan "+(raw.settings&&typeof raw.settings==="object"?"juga dikirim ke backend.":"tidak tersedia pada file ini.")+"\nPeriksa hasilnya sebelum melanjutkan pekerjaan.");
+    }catch(e){
+        alert("Import seluruh database gagal: "+(e.message||e)+"\n\nJika gagal pada API importLegacyBatch/importLegacySettings, backend Supabase perlu mendukung aksi tersebut.");
+    }finally{
+        input.value="";
+    }
 }
 
 function openMigration(){
