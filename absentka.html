@@ -1175,11 +1175,16 @@ label{
                         </p>
                     </div>
 
-                    <button class="btn btn-primary"
-                            onclick="openTeacherModal()">
+                    <div class="flex flex-wrap gap-2">
+                    <button class="btn btn-secondary" onclick="downloadMasterTemplate('teachers')"><i class="fa-solid fa-download"></i> Template Excel</button>
+                    <button class="btn btn-success" onclick="document.getElementById('importTeachersFile').click()"><i class="fa-solid fa-file-excel"></i> Import Excel</button>
+                    <button class="btn btn-danger" onclick="bulkDelete('teachers')"><i class="fa-solid fa-trash"></i> Hapus Kolektif</button>
+                    <input id="importTeachersFile" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="importMasterData('teachers',this)">
+                    <button class="btn btn-primary" onclick="openTeacherModal()">
                         <i class="fa-solid fa-plus"></i>
                         Tambah Guru
                     </button>
+                    </div>
 
                 </div>
 
@@ -1314,11 +1319,16 @@ label{
                         </p>
                     </div>
 
-                    <button class="btn btn-primary"
-                            onclick="openSubjectModal()">
+                    <div class="flex flex-wrap gap-2">
+                    <button class="btn btn-secondary" onclick="downloadMasterTemplate('subjects')"><i class="fa-solid fa-download"></i> Template Excel</button>
+                    <button class="btn btn-success" onclick="document.getElementById('importSubjectsFile').click()"><i class="fa-solid fa-file-excel"></i> Import Excel</button>
+                    <button class="btn btn-danger" onclick="bulkDelete('subjects')"><i class="fa-solid fa-trash"></i> Hapus Kolektif</button>
+                    <input id="importSubjectsFile" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="importMasterData('subjects',this)">
+                    <button class="btn btn-primary" onclick="openSubjectModal()">
                         <i class="fa-solid fa-plus"></i>
                         Tambah Mapel
                     </button>
+                    </div>
 
                 </div>
 
@@ -1366,11 +1376,16 @@ label{
                         </p>
                     </div>
 
-                    <button class="btn btn-primary"
-                            onclick="openClassModal()">
+                    <div class="flex flex-wrap gap-2">
+                    <button class="btn btn-secondary" onclick="downloadMasterTemplate('classes')"><i class="fa-solid fa-download"></i> Template Excel</button>
+                    <button class="btn btn-success" onclick="document.getElementById('importClassesFile').click()"><i class="fa-solid fa-file-excel"></i> Import Excel</button>
+                    <button class="btn btn-danger" onclick="bulkDelete('classes')"><i class="fa-solid fa-trash"></i> Hapus Kolektif</button>
+                    <input id="importClassesFile" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="importMasterData('classes',this)">
+                    <button class="btn btn-primary" onclick="openClassModal()">
                         <i class="fa-solid fa-plus"></i>
                         Tambah Kelas
                     </button>
+                    </div>
 
                 </div>
 
@@ -1418,11 +1433,16 @@ label{
                         </p>
                     </div>
 
-                    <button class="btn btn-primary"
-                            onclick="openAssignmentModal()">
+                    <div class="flex flex-wrap gap-2">
+                    <button class="btn btn-secondary" onclick="downloadMasterTemplate('assignments')"><i class="fa-solid fa-download"></i> Template Excel</button>
+                    <button class="btn btn-success" onclick="document.getElementById('importAssignmentsFile').click()"><i class="fa-solid fa-file-excel"></i> Import Excel</button>
+                    <button class="btn btn-danger" onclick="bulkDelete('assignments')"><i class="fa-solid fa-trash"></i> Hapus Kolektif</button>
+                    <input id="importAssignmentsFile" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="importMasterData('assignments',this)">
+                    <button class="btn btn-primary" onclick="openAssignmentModal()">
                         <i class="fa-solid fa-plus"></i>
                         Tambah Penugasan
                     </button>
+                    </div>
 
                 </div>
 
@@ -1499,6 +1519,15 @@ label{
                         Simpan Pengaturan
                     </button>
 
+                </div>
+
+                <div class="card p-6 max-w-2xl mt-5">
+                    <h3 class="font-bold mb-3"><i class="fa-solid fa-key mr-2"></i>Ubah Password Administrator</h3>
+                    <p class="text-sm text-slate-500 mb-4">Password baru minimal 8 karakter. Perubahan diproses melalui fungsi keamanan database.</p>
+                    <div class="mb-3"><label>Password Saat Ini</label><input id="adminCurrentPassword" type="password" class="input" autocomplete="current-password"></div>
+                    <div class="mb-3"><label>Password Baru</label><input id="adminNewPassword" type="password" class="input" autocomplete="new-password"></div>
+                    <div class="mb-4"><label>Ulangi Password Baru</label><input id="adminConfirmPassword" type="password" class="input" autocomplete="new-password"></div>
+                    <button class="btn btn-primary" onclick="changeAdminPassword()"><i class="fa-solid fa-floppy-disk"></i> Ubah Password</button>
                 </div>
 
                 <div class="card p-6 max-w-4xl mt-5">
@@ -4480,6 +4509,84 @@ document.addEventListener(
 </script>
 
 <script>
+/* =========================================================
+   ADMIN IMPORT TEMPLATE + BULK DELETE + PASSWORD
+========================================================= */
+const MASTER_CONFIG={
+ teachers:{sheet:'Guru',headers:['Nama','Username','NIP/NUPTK','Password','Status'],action:'saveTeacher'},
+ subjects:{sheet:'Mapel',headers:['Kode','Nama Mapel','Status'],action:'saveSubject'},
+ classes:{sheet:'Kelas',headers:['Kode','Nama Kelas','Status'],action:'saveClass'},
+ assignments:{sheet:'Penugasan',headers:['Username Guru','Kode Mapel','Kode Kelas','Status'],action:'saveAssignment'}
+};
+function adminOnly(){if(currentUser?.role!=='ADMIN'){alert('Fitur ini hanya untuk administrator.');return false;}return true;}
+function downloadMasterTemplate(type){
+ if(!adminOnly())return;
+ const c=MASTER_CONFIG[type]; if(!c)return;
+ const examples={teachers:[{Nama:'CONTOH GURU',Username:'guru.contoh','NIP/NUPTK':'123456789',Password:'GantiPassword123',Status:'AKTIF'}],subjects:[{Kode:'BIO', 'Nama Mapel':'Biologi',Status:'AKTIF'}],classes:[{Kode:'XII1','Nama Kelas':'XII.1',Status:'AKTIF'}],assignments:[{'Username Guru':'guru.contoh','Kode Mapel':'BIO','Kode Kelas':'XII1',Status:'AKTIF'}]};
+ const wb=XLSX.utils.book_new(),ws=XLSX.utils.json_to_sheet(examples[type]);
+ XLSX.utils.book_append_sheet(wb,ws,c.sheet); XLSX.writeFile(wb,'Template_'+c.sheet+'_Absensi.xlsx');
+}
+async function importMasterData(type,input){
+ const file=input.files?.[0]; if(!file)return;
+ if(!adminOnly()){input.value='';return;}
+ try{
+  const buf=await file.arrayBuffer(),wb=XLSX.read(buf,{type:'array'}),sheet=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(sheet,{defval:''}); if(!rows.length)throw new Error('File Excel tidak berisi baris data.');
+  const norm=v=>String(v??'').trim().toLowerCase();
+  let done=0,skipped=[];
+  for(let i=0;i<rows.length;i++){
+   const r=rows[i],line=i+2; let payload={},action=MASTER_CONFIG[type].action;
+   if(type==='teachers'){
+    const nama=String(r.Nama||r['Nama Guru']||'').trim(),username=String(r.Username||r.username||'').trim();
+    if(!nama||!username){skipped.push(line+': nama/username kosong');continue;}
+    if(!String(r.Password||'').trim()){skipped.push(line+': password kosong');continue;}
+    if(String(r.Password).length<8){skipped.push(line+': password minimal 8 karakter');continue;}
+    payload={id:'',nama,username,nip:String(r['NIP/NUPTK']||r.NIP||'').trim(),password:String(r.Password),status:String(r.Status||'AKTIF').trim().toUpperCase()};
+   }else if(type==='subjects'){
+    const kode=String(r.Kode||r['Kode Mapel']||'').trim(),nama=String(r['Nama Mapel']||r.Nama||'').trim();
+    if(!nama){skipped.push(line+': nama mapel kosong');continue;} payload={id:'',kode,nama,status:String(r.Status||'AKTIF').trim().toUpperCase()};
+   }else if(type==='classes'){
+    const kode=String(r.Kode||r['Kode Kelas']||'').trim(),nama=String(r['Nama Kelas']||r.Nama||'').trim();
+    if(!nama){skipped.push(line+': nama kelas kosong');continue;} payload={id:'',kode,nama,status:String(r.Status||'AKTIF').trim().toUpperCase()};
+   }else if(type==='assignments'){
+    const un=String(r['Username Guru']||r.Username||'').trim(),mk=String(r['Kode Mapel']||'').trim(),kk=String(r['Kode Kelas']||'').trim();
+    const teacher=DB.users.find(x=>norm(x.username)===norm(un)&&x.role==='GURU');
+    const subject=DB.subjects.find(x=>norm(x.kode||x.code)===norm(mk));
+    const cls=DB.classes.find(x=>norm(x.kode||x.code)===norm(kk));
+    if(!teacher||!subject||!cls){skipped.push(line+': guru/mapel/kelas tidak ditemukan; periksa kode pada template');continue;}
+    payload={id:'',guruId:teacher.id,mapelId:subject.id,kelasId:cls.id,status:String(r.Status||'AKTIF').trim().toUpperCase()};
+   }
+   try{await api(action,payload);done++;}catch(e){skipped.push(line+': '+(e.message||'gagal'));}
+  }
+  await bootstrap();
+  if(type==='teachers')renderTeachers(); else if(type==='subjects')renderSubjects(); else if(type==='classes')renderClasses(); else renderAssignments();
+  alert('Import selesai. Berhasil: '+done+' dari '+rows.length+'.'+(skipped.length?'\n\nBaris dilewati/gagal:\n'+skipped.slice(0,25).join('\n')+(skipped.length>25?'\n...dan '+(skipped.length-25)+' baris lainnya.':''):''));
+ }catch(e){alert('Import gagal: '+(e.message||e));}finally{input.value='';}
+}
+async function bulkDelete(type){
+ if(!adminOnly())return;
+ const cfg={teachers:{label:'guru',rows:()=>DB.users.filter(x=>x.role==='GURU'),action:'deleteTeacher'},subjects:{label:'mapel',rows:()=>DB.subjects,action:'deleteSubject'},classes:{label:'kelas',rows:()=>DB.classes,action:'deleteClass'},assignments:{label:'penugasan',rows:()=>DB.assignments,action:'deleteAssignment'}}[type];
+ if(!cfg)return; const rows=cfg.rows(); if(!rows.length){alert('Tidak ada data '+cfg.label+' untuk dihapus.');return;}
+ const warning=type==='teachers'||type==='subjects'||type==='classes'?'\nPerhatikan: data terkait dapat terpengaruh oleh relasi database.':'\n';
+ if(!confirm('HAPUS KOLEKTIF '+rows.length+' '+cfg.label.toUpperCase()+'?'+warning+'Tindakan ini tidak dapat dibatalkan. Lanjutkan?'))return;
+ if(prompt('Ketik HAPUS untuk konfirmasi penghapusan kolektif:')!=='HAPUS'){alert('Dibatalkan.');return;}
+ let ok=0,failed=[];
+ for(const row of rows){try{await api(cfg.action,{id:row.id});ok++;}catch(e){failed.push((row.nama||row.id)+': '+e.message);}}
+ await bootstrap();
+ ({teachers:renderTeachers,subjects:renderSubjects,classes:renderClasses,assignments:renderAssignments}[type])();
+ alert('Penghapusan selesai. Terhapus: '+ok+'. Gagal: '+failed.length+(failed.length?'\n'+failed.slice(0,10).join('\n'):''));
+}
+async function changeAdminPassword(){
+ if(!adminOnly())return;
+ const currentPassword=$('adminCurrentPassword').value,newPassword=$('adminNewPassword').value,confirmPassword=$('adminConfirmPassword').value;
+ if(!currentPassword||!newPassword||!confirmPassword){alert('Semua kolom password wajib diisi.');return;}
+ if(newPassword.length<8){alert('Password baru minimal 8 karakter.');return;}
+ if(newPassword!==confirmPassword){alert('Konfirmasi password baru tidak sama.');return;}
+ if(!confirm('Ubah password administrator sekarang?'))return;
+ try{await api('changePassword',{currentPassword,newPassword});$('adminCurrentPassword').value='';$('adminNewPassword').value='';$('adminConfirmPassword').value='';alert('Permintaan perubahan password berhasil diproses. Jika database belum mendukung aksi changePassword, jalankan pembaruan fungsi SQL app_api terlebih dahulu.');}
+ catch(e){alert('Gagal mengubah password: '+e.message+'\n\nFungsi database app_api harus memiliki aksi changePassword dan memverifikasi password saat ini.');}
+}
+
 /* =========================================================
    REALTIME DATABASE MODE — SUPABASE
    Google Sheets / Apps Script hanya dipakai saat migrasi.
