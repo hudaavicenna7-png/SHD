@@ -4009,7 +4009,7 @@ async function checkTeacherAttendanceLocation(){
     try{
         const position = await getBrowserLocation();
         const schoolLocation = getSchoolLocation();
-        const radius = Number(DB.settings.radiusLokasi || DB.settings.locationRadius || 100);
+        const radius = Number(DB.settings.radiusLokasi || DB.settings.locationRadius || 500);
         const distance = distanceMeters(position.lat, position.lng, schoolLocation.lat, schoolLocation.lng);
         const inRadius = Number.isFinite(radius) && radius >= 20 && radius <= 2000 && distance <= radius;
         const accuracyText = `Akurasi GPS ±${Math.round(position.accuracy)} m`;
@@ -4030,7 +4030,7 @@ function openSchoolLocationMap(){
 }
 
 async function validateTeacherLocation(){
-    const radius = Number(DB.settings.radiusLokasi || DB.settings.locationRadius || 100);
+    const radius = Number(DB.settings.radiusLokasi || DB.settings.locationRadius || 500);
     if(!Number.isFinite(radius) || radius < 20 || radius > 2000){
         throw new Error('Radius lokasi sekolah belum valid. Minta admin memeriksa Pengaturan.');
     }
