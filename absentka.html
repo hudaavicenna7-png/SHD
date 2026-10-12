@@ -2032,8 +2032,40 @@ function escapeHtml(value){
 }
 
 function today(){
+    // Gunakan tanggal lokal perangkat agar tidak bergeser karena zona waktu UTC.
     const d = new Date();
-    return d.toISOString().slice(0,10);
+    const year = d.getFullYear();
+    const month = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${year}-${month}-${day}`;
+}
+
+// Guru hanya boleh mengisi absensi untuk tanggal hari ini.
+// Administrator tetap bebas memilih tanggal untuk koreksi/entri data.
+function applyAttendanceDateAccess(){
+    const isAdmin = currentUser && currentUser.role === 'ADMIN';
+    ['attendanceDate','teacherAttendanceDate'].forEach(id=>{
+        const el = $(id);
+        if(!el) return;
+        if(isAdmin){
+            el.removeAttribute('min');
+            el.removeAttribute('max');
+            el.disabled = false;
+        }else{
+            el.removeAttribute('min');
+            el.max = today();
+            el.value = today();
+            el.disabled = false;
+        }
+    });
+}
+
+function validateTodayForTeacher(dateValue, label){
+    if(currentUser && currentUser.role !== 'ADMIN' && dateValue !== today()){
+        alert(`${label}: akun guru hanya dapat mengisi absensi untuk hari ini (${today()}). Tanggal yang terlewat tidak dapat diisi.`);
+        return false;
+    }
+    return true;
 }
 
 function closeModal(id){
@@ -3411,8 +3443,8 @@ function sameRef(valueA, valueB, type){
 
 function prepareAttendance(){
 
-    $("attendanceDate").value =
-        today();
+    $("attendanceDate").value = today();
+    applyAttendanceDateAccess();
 
     populateAttendanceFilters();
 
@@ -3729,6 +3761,8 @@ async function saveAttendance(){
     const kelasId =
         $("attendanceClass").value;
 
+    if(!validateTodayForTeacher(tanggal, "Absensi siswa")) return;
+
     if(!tanggal ||
        !mapelId ||
        !kelasId){
@@ -3853,6 +3887,7 @@ function closeWelcome(){
 function prepareTeacherAttendance(){
     $("teacherAttendanceEditId").value = '';
     $("teacherAttendanceDate").value = today();
+    applyAttendanceDateAccess();
     $("teacherAttendanceStatus").value = 'HADIR';
     $("teacherAttendanceNote").value = '';
 
@@ -4054,6 +4089,8 @@ async function saveTeacherAttendance(){
     const kelasId = $("teacherAttendanceClass").value;
     const status = $("teacherAttendanceStatus").value;
     const catatan = $("teacherAttendanceNote").value.trim();
+
+    if(!validateTodayForTeacher(tanggal, "Kehadiran guru")) return;
 
     if(!tanggal || !guruId || !mapelId || !kelasId || !status){
         alert('Tanggal, guru, mapel, kelas dan status wajib diisi.');
@@ -4693,6 +4730,18 @@ document.addEventListener(
 
         if($("teacherRecapEnd"))
             $("teacherRecapEnd").value = today();
+
+        ["attendanceDate","teacherAttendanceDate"].forEach(id=>{
+            const dateInput = $(id);
+            if(dateInput){
+                dateInput.addEventListener("change", ()=>{
+                    if(currentUser && currentUser.role !== "ADMIN" && dateInput.value !== today()){
+                        alert("Akun guru hanya dapat mengisi absensi pada hari ini. Tanggal dikembalikan ke hari ini.");
+                        dateInput.value = today();
+                    }
+                });
+            }
+        });
 
         $("loginPassword")
             .addEventListener(
